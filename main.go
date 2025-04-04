@@ -2,11 +2,18 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"io"
 	"log"
+	"net/http"
 	"os"
 )
+
+type arc string
+type ArcHandler struct {
+	arc arc
+}
 
 func main() {
 
@@ -29,11 +36,9 @@ func main() {
 		} `json:"options"`
 	}
 
-	type arc string
+	chapters := map[arc]arcContent{}
 
-	stories := map[arc]arcContent{}
-
-	err = json.Unmarshal(st, &stories)
+	err = json.Unmarshal(st, &chapters)
 	if err != nil {
 		log.Panicln(err.Error())
 	}
@@ -44,15 +49,43 @@ func main() {
 		panic(err)
 	}
 
-	f, err = os.Create("arc.html")
-	if err != nil {
-		panic(err)
-	}
-	defer f.Close()
+	for arc := range chapters {
 
-	err = tmpl.Execute(f, stories["intro"])
-	if err != nil {
-		panic(err)
+		htmlPath := fmt.Sprintf("html/arc_%s.html", arc)
+		f, err = os.Create(htmlPath)
+		if err != nil {
+			panic(err)
+		}
+		defer f.Close()
+
+		err = tmpl.Execute(f, chapters[arc])
+		if err != nil {
+			panic(err)
+		}
+	}
+	for arc := range chapters {
+		archHandler := &ArcHandler{
+			arc: arc,
+		}
+		path := fmt.Sprintf("/%s", arc)
+		http.Handle(path, archHandler)
 	}
 
+	http.ListenAndServe(":8000", nil)
+	// need to do the cleaning
+}
+
+func (s *ArcHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	
+	htmlPath := fmt.Sprintf("html/arc_%s.html", s.arc)
+	f, err := os.Open(htmlPath)
+	if err != nil {
+		log.Panicln(err.Error())
+	}
+
+	st, err := io.ReadAll(f)
+	if err != nil {
+		log.Println(err.Error())
+	}
+	w.Write([]byte(st))
 }

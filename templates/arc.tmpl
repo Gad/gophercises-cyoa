@@ -9,7 +9,21 @@
     <h1>An interactive story</h1>
     
     
-    <dt> Chapter : {{.Title}} </dt>
+    <h2> Chapter : {{.Title}} </h2>
+    {{range .Story}}
+    <p> {{.}} </p>
+    {{end}}
+
+    <h2> Next ? </h2>
+    <ul>
+        {{range .Options}}
+        <li> <a href="{{.Arc}}">{{.Text}}</a>  </li>
+        {{end}}   
+
+    </ul>
+
+
+
     
     
 
