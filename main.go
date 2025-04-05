@@ -62,14 +62,9 @@ func storyParsing(fileName string) (chapters map[arc]arcContent, err error) {
 		return nil, err
 	}
 
-	st, err := io.ReadAll(f)
-	if err != nil {
-		return nil, err
-	}
+	d := json.NewDecoder(f)
 
-	chapters = map[arc]arcContent{}
-
-	err = json.Unmarshal(st, &chapters)
+	err = d.Decode(&chapters)
 	if err != nil {
 		return nil, err
 	}
