@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"html/template"
@@ -12,13 +11,13 @@ import (
 	"os/signal"
 	"path/filepath"
 	"syscall"
-)
 
-type arc string
+	story "github.com/gad/gophercises-cyoa"
+)
 
 // Handler of each arc/chapter. implements ServeHTTP Handler interface
 type ArcHandler struct {
-	arc arc
+	arc story.Arc
 }
 
 // pour the html file corresponding to each handler into the http paquet
@@ -44,36 +43,11 @@ const (
 	htmlTempDir = "tmp/html"
 )
 
-type arcContent struct {
-	Title   string   `json:"title"`
-	Story   []string `json:"story"`
-	Options []struct {
-		Text string `json:"text"`
-		Arc  string `json:"arc"`
-	} `json:"options"`
-}
 
 
-// parse json file into a map of arcContent
-func storyParsing(fileName string) (chapters map[arc]arcContent, err error) {
-
-	f, err := os.Open(fileName)
-	if err != nil {
-		return nil, err
-	}
-
-	d := json.NewDecoder(f)
-
-	err = d.Decode(&chapters)
-	if err != nil {
-		return nil, err
-	}
-
-	return chapters, nil
-}
 
 // generate html files for each chapter based on a template file
-func htmlGenerate(chapters map[arc]arcContent, tmplFile string, htmlTempDir string) error {
+func htmlGenerate(chapters map[story.Arc]story.ArcContent, tmplFile string, htmlTempDir string) error {
 
 	// 1- creates a new template from tmplFile
 	// 2- creates as many html file as chapters in htmlTempDir
@@ -111,7 +85,7 @@ func htmlGenerate(chapters map[arc]arcContent, tmplFile string, htmlTempDir stri
 }
 
 // create a new endpoint for each chapter and register the handler
-func registerHandlers(chapters map[arc]arcContent) {
+func registerHandlers(chapters map[story.Arc]story.ArcContent) {
 
 	
 	for arc := range chapters {
@@ -144,7 +118,7 @@ func cleaning(htmlTempDir string) error {
 func main() {
 
 
-	chapters, err := storyParsing("gopher.json")
+	chapters, err := story.StoryParsing("gopher.json")
 	if err != nil {
 		log.Panic(err)
 	}
