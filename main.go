@@ -8,12 +8,18 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"path/filepath"
+	"syscall"
 )
 
 type arc string
 type ArcHandler struct {
 	arc arc
 }
+var tmplFile = "templates/arc.tmpl"
+var htmlTempDir = "tmp/html"
+
 
 func main() {
 
@@ -43,7 +49,6 @@ func main() {
 		log.Panicln(err.Error())
 	}
 
-	var tmplFile = "templates/arc.tmpl"
 	tmpl, err := template.ParseFiles(tmplFile)
 	if err != nil {
 		panic(err)
@@ -51,8 +56,9 @@ func main() {
 
 	for arc := range chapters {
 
-		htmlPath := fmt.Sprintf("html/arc_%s.html", arc)
-		f, err = os.Create(htmlPath)
+		fileName := fmt.Sprintf("%s/arc_%s.html", htmlTempDir, arc)
+
+		f, err = os.Create(fileName)
 		if err != nil {
 			panic(err)
 		}
@@ -71,13 +77,36 @@ func main() {
 		http.Handle(path, archHandler)
 	}
 
-	http.ListenAndServe(":8000", nil)
-	// need to do the cleaning
+	go func() {
+		if err := http.ListenAndServe(":8000", nil); err != http.ErrServerClosed {
+			log.Fatalf("Server error : %v", err)
+		}
+
+	}()
+	// handle graceful shutdown
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
+	<-stop
+
+	// cleaning temporary html files
+	
+	globPattern := fmt.Sprintf("%s/*.html",htmlTempDir)
+	matches, err := filepath.Glob(globPattern)
+	if err!=nil {
+		log.Println(err)
+	}
+	for _,m := range matches {
+		if err = os.Remove(m); err != nil {
+			log.Fatalf("Error cleaning temporary html files : %v", err)
+		}
+
+	}
+
 }
 
 func (s *ArcHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	
-	htmlPath := fmt.Sprintf("html/arc_%s.html", s.arc)
+
+	htmlPath := fmt.Sprintf("%s/arc_%s.html", htmlTempDir, s.arc)
 	f, err := os.Open(htmlPath)
 	if err != nil {
 		log.Panicln(err.Error())
