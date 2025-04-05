@@ -5,6 +5,8 @@ import (
 	"os"
 )
 
+const HtmlTempDir = "tmp/html"
+
 type Arc string
 
 type ArcContent struct {
@@ -12,12 +14,16 @@ type ArcContent struct {
 	Story   []string `json:"story"`
 	Options []struct {
 		Text string `json:"text"`
-		Arc  Arc `json:"Arc"`
+		Arc  Arc    `json:"Arc"`
 	} `json:"options"`
 }
 
+type FullStory map[Arc]ArcContent
+
+
+
 // parse json file into a map of ArcContent
-func StoryParsing(fileName string) (chapters map[Arc]ArcContent, err error) {
+func StoryParsing(fileName string) (chapters FullStory, err error) {
 
 	f, err := os.Open(fileName)
 	if err != nil {
