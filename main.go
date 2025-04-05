@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"html/template"
 	"io"
@@ -87,7 +88,14 @@ func htmlGenerate(chapters map[arc]arcContent, tmplFile string, htmlTempDir stri
 
 		tmpl, err := template.ParseFiles(tmplFile)
 		if err != nil {
-			panic(err)
+			return err
+		}
+
+		if _, err := os.Stat(htmlTempDir); errors.Is(err, os.ErrNotExist){
+			err = os.MkdirAll(htmlTempDir, os.ModePerm)
+			if err != nil {
+				return err
+			}
 		}
 
 		fileName := fmt.Sprintf("%s/arc_%s.html", htmlTempDir, arc)
@@ -169,6 +177,8 @@ func main() {
 	// cleaning temporary html files
 	if err = cleaning(htmlTempDir); err != nil {
 		log.Fatalf("Error cleaning temporary html files : %v", err)
+	} else {
+		log.Println("Done")
 	}
 }
 
