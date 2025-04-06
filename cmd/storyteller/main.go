@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"net/http"
 	"os"
@@ -10,19 +11,20 @@ import (
 	"github.com/gad/gophercises-cyoa/story"
 )
 
-const (
-	tmplFile    = "templates/arc.tmpl"
-)
+
 
 func main() {
 
+	jsonFile := flag.String("file","gopher.json", "the json file containing the story")
+	tmplFile := flag.String("tmpl", "templates/arc.tmpl", "the html template file")
+	flag.Parse()
 
-	chapters, err := story.StoryParsing("gopher.json")
+	chapters, err := story.StoryParsing(*jsonFile)
 	if err != nil {
 		log.Panic(err)
 	}
 
-	err = story.HtmlGenerate(chapters, tmplFile, story.HtmlTempDir)
+	err = story.HtmlGenerate(chapters, *tmplFile, story.HtmlTempDir)
 	if err != nil {
 		log.Panic(err)
 	}
